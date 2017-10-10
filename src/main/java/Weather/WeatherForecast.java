@@ -19,12 +19,14 @@ public class WeatherForecast {
 
     private static final String API_KEY = "778909b9fe84fb35f150e83d127e3f49";
 
+    private static final String cityId = "588409";
+
 
     public static void main(String[] args) throws Exception{
         URL url = null;
         HttpURLConnection connection = null;
         try {
-            url = new URL("http://samples.openweathermap.org/data/2.5/forecast?id=524901&appid=" + API_KEY);
+            url = new URL("http://api.openweathermap.org/data/2.5/forecast?id=588409&APPID=" + API_KEY);
             connection = (HttpURLConnection) url.openConnection();
             connection.connect();
         } catch (IOException e) {
