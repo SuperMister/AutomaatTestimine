@@ -1,55 +1,120 @@
 package Weather;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import jdk.nashorn.internal.objects.Global;
-import jdk.nashorn.internal.parser.JSONParser;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
-import javax.xml.ws.Response;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class WeatherForecast {
 
-    private static final String API_KEY = "778909b9fe84fb35f150e83d127e3f49";
+    private  final String API_KEY = "778909b9fe84fb35f150e83d127e3f49";
 
-    private static final String cityId = "588409";
+    private HashMap<String, String> cityIDs; {
+        cityIDs = new HashMap<String, String>();
+        cityIDs.put("Tallinn", "588409");
+    }
 
+    public String readFromUrl(HttpURLConnection httpURLConnection) {
+        StringBuilder content = new StringBuilder();
 
-    public static void main(String[] args) throws Exception{
-        URL url = null;
+        try {
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(httpURLConnection.getInputStream()));
+
+            String line;
+
+            while ((line = bufferedReader.readLine()) != null) {
+                content.append(line + "\n");
+            }
+            bufferedReader.close();
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
+        return content.toString();
+    }
+
+    public HttpURLConnection getHttpURLConnection(String city) {
         HttpURLConnection connection = null;
         try {
-            url = new URL("http://api.openweathermap.org/data/2.5/forecast?id=588409&APPID=" + API_KEY);
-            connection = (HttpURLConnection) url.openConnection();
+            URL url = new URL("http://api.openweathermap.org/data/2.5/forecast?id=" + cityIDs.get(city) + "&APPID=" + API_KEY);
+                    connection = (HttpURLConnection) url.openConnection();
             connection.connect();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        String jsonString = readFromUrl(url);
-        //System.out.println(jsonString);
-        Gson gson = new GsonBuilder().create();
-        System.out.println(gson.toString());
-    }
-    public static String readFromUrl(URL url) {
-        String inputLine = null;
-        try {
-            BufferedReader in = new BufferedReader(
-                    new InputStreamReader(url.openStream()));
-            while ((inputLine = in.readLine()) != null)
-                System.out.println(inputLine);
-            in.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return inputLine;
+        return connection;
     }
 
+    public JsonObject jsonParser(String jsonString) {
+        JsonElement jsonElement = new JsonParser().parse(jsonString);
+        return jsonElement.getAsJsonObject();
+    }
+
+    public JsonObject getLocation(JsonObject jsonObject) {
+        return jsonObject.getAsJsonObject("city");
+    }
+
+    public Map<String, String> getCurrentWeather(JsonObject jsonObject) {
+        Map<String, String> map = new TreeMap<String, String>();
+        JsonObject forecastLocation = jsonObject.getAsJsonObject("city");
+        JsonArray jsonArray = jsonObject.getAsJsonArray("list");
+
+        map.put("LOCATION", forecastLocation.toString());
+
+        JsonObject object = jsonArray.get(0).getAsJsonObject();
+        String date = object.get("dt_txt").getAsString();
+
+        JsonObject currentWeather = object.get("main").getAsJsonObject();
+        map.put("Date", date);
+        map.put("TEMPERATURE", currentWeather.get("temp").toString());
+
+        return map;
+    }
+
+    public Map<String, String> getWeatherForecast(JsonObject jsonObject) {
+
+        Map<String, String> map = new TreeMap<String, String>();
+
+        JsonObject forecastLocation = jsonObject.getAsJsonObject("city");
+        JsonArray jsonArray = jsonObject.getAsJsonArray("list");
+
+        map.put("LOCATION", forecastLocation.toString());
+
+        Map<String, JsonElement> weatherInformation = new HashMap<String, JsonElement>();
+
+        for (int i = 0; i < 25; i++) {
+            JsonObject object = jsonArray.get(i).getAsJsonObject();
+
+            String date = object.get("dt_txt").getAsString();
+
+
+            JsonObject weatherInfo = object.get("main").getAsJsonObject();
+
+            weatherInformation.put("MIN_TEMPERATURE", weatherInfo.get("temp_min"));
+            weatherInformation.put("MAX_TEMPERATURE", weatherInfo.get("temp_max"));
+
+            map.put(date, weatherInformation.toString());
+
+        }
+        return map;
+    }
+
+
+    public static void main(String[] args) throws Exception{
+        WeatherForecast wf = new WeatherForecast();
+        HttpURLConnection httpURLConnection = wf.getHttpURLConnection("Tallinn");
+        String jsonString = wf.readFromUrl(httpURLConnection);
+        Map<String, String> a = wf.getCurrentWeather(wf.jsonParser(jsonString));
+        System.out.println(a.toString());
+    }
 
 }
