@@ -4,21 +4,25 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import weatherForecast.HttpConnection;
-import weatherForecast.ReaderFromConnection;
+import weatherForecast.utilities.FileProcessor;
+import weatherForecast.utilities.HttpConnection;
+import weatherForecast.utilities.ReaderFromConnection;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.TreeMap;
 
 public class WeatherForecast {
 
-    private ReaderFromConnection reader = new ReaderFromConnection();
+    private ReaderFromConnection reader;
 
-    private  final String API_KEY = "778909b9fe84fb35f150e83d127e3f49";
+    private FileProcessor fileProcessor;
+
+    public WeatherForecast() {
+        reader = new ReaderFromConnection();
+        fileProcessor = new FileProcessor();
+    }
 
     public JsonObject jsonParser(String jsonString) {
         JsonElement jsonElement = new JsonParser().parse(jsonString);
@@ -80,10 +84,48 @@ public class WeatherForecast {
         return map;
     }
 
+    public Map<String, String> getForecastFromConsole () {
+
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.print("Please, enter city: ");
+
+        String city = scanner.next();
+
+        System.out.println(getWeatherForecast(city));
+        return getWeatherForecast(city);
+    }
+
+    public void forecastForCitiesInFile() {
+        String[] cities = fileProcessor.readFromFile().split("\n");
+        StringBuilder output = new StringBuilder();
+        for (int i = 0; i < cities.length; i++) {
+            output.append(getWeatherForecast(cities[i]));
+            output.append("\n");
+        }
+        fileProcessor.writeToFile(output.toString());
+    }
+
+    public ReaderFromConnection getReader() {
+        return reader;
+    }
+
+    public void setReader(ReaderFromConnection reader) {
+        this.reader = reader;
+    }
+
+    public FileProcessor getFileProcessor() {
+        return fileProcessor;
+    }
+
+    public void setFileProcessor(FileProcessor fileProcessor) {
+        this.fileProcessor = fileProcessor;
+    }
+
 
     public static void main(String[] args) throws Exception{
-        WeatherForecast wf = new WeatherForecast();
-        System.out.println(wf.getWeatherForecast("tallinn"));
+        WeatherForecast weatherForecast = new WeatherForecast();
+        System.out.println(weatherForecast.getCurrentWeather("Tallinn"));
     }
 
 }
