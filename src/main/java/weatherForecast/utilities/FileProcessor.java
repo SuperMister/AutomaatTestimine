@@ -4,12 +4,12 @@ import java.io.*;
 
 public class FileProcessor {
 
-    private String inputFile = "/Users/wiggily/AutomaatTestimine/src/main/java/weatherForecast/input/input.txt";
+    private String inputFile = "src\\main\\java\\weatherForecast\\input\\input.txt";
 
-    private String outputFile = "/Users/wiggily/AutomaatTestimine/src/main/java/weatherForecast/output/output.txt";
+    private String prefix = "src\\main\\java\\weatherForecast\\output\\";
 
     public String readFromFile() {
-        String line = null;
+        String line;
         StringBuilder output = new StringBuilder();
         try {
             FileReader fileReader = new FileReader(inputFile);
@@ -17,8 +17,8 @@ public class FileProcessor {
             BufferedReader bufferedReader = new BufferedReader(fileReader);
 
             while ((line = bufferedReader.readLine()) != null) {
-                output.append(line);
-                output.append("\n");
+
+                output.append(line).append("\n");
             }
 
             bufferedReader.close();
@@ -29,9 +29,9 @@ public class FileProcessor {
         return output.toString();
     }
 
-    public void writeToFile(String text) {
+    public void writeToFile(String text, String city) {
         try {
-            FileWriter fileWriter = new FileWriter(outputFile);
+            FileWriter fileWriter = new FileWriter(prefix + "\\" + city + ".txt");
 
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
 
@@ -52,12 +52,11 @@ public class FileProcessor {
         this.inputFile = inputFile;
     }
 
-    public String getOutputFile() {
-        return outputFile;
+    public String getPrefix() {
+        return prefix;
     }
 
-    public void setOutputFile(String outputFile) {
-        this.outputFile = outputFile;
+    public void setPrefix(String prefix) {
+        this.prefix = prefix;
     }
-
 }

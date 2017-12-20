@@ -1,6 +1,5 @@
 package weatherForecast.utilities;
 
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -16,7 +15,7 @@ public class HttpConnection {
             connection = (HttpURLConnection) url.openConnection();
             connection.connect();
         } catch (IOException e) {
-            System.out.println("No such file!");
+            System.out.println("Something went wrong when connecting to API");
         }
         return connection;
     }
@@ -32,6 +31,5 @@ public class HttpConnection {
     public void setAPI_KEY(String API_KEY) {
         this.API_KEY = API_KEY;
     }
-
 
 }

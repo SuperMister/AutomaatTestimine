@@ -1,49 +1,50 @@
 package weatherForecast.utilities;
 
-import weatherForecast.utilities.HttpConnection;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
 public class ReaderFromConnection {
 
-
     private HttpConnection httpConnection = new HttpConnection();
 
-    public ReaderFromConnection() {
-        httpConnection = new HttpConnection();
+    public ReaderFromConnection(HttpConnection connection) {
+        httpConnection = connection;
     }
 
-    public String readFromUrl(String city) {
+    public String readFromUrl(String city) throws IOException{
 
         StringBuilder content = new StringBuilder();
-        try {
-            BufferedReader bufferedReader = new BufferedReader(
-                    new InputStreamReader(httpConnection.getHttpURLConnection(city)
-                            .getInputStream()));
 
-            String line;
+        BufferedReader bufferedReader = getReader(city);
 
-            while ((line = bufferedReader.readLine()) != null) {
-                content.append(line + "\n");
-            }
-            bufferedReader.close();
+        if (bufferedReader == null) {
+            return null;
         }
-        catch(IOException e) {
-            System.exit(1);
+
+        String line;
+
+        while ((line = bufferedReader.readLine()) != null) {
+            content.append(line).append("\n");
         }
+        bufferedReader.close();
+
         httpConnection.closeConnection();
         return content.toString();
     }
 
-    public HttpConnection getHttpConnection() {
-        return httpConnection;
+    public BufferedReader getReader(String city) throws IOException {
+        return new BufferedReader(
+                new InputStreamReader(httpConnection.getHttpURLConnection(city)
+                        .getInputStream()));
     }
 
     public void setHttpConnection(HttpConnection httpConnection) {
         this.httpConnection = httpConnection;
     }
 
+    public HttpConnection getHttpConnection() {
+        return this.httpConnection;
+    }
 
 }

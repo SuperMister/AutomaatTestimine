@@ -1,17 +1,14 @@
 package weatherForecast.weather;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import weatherForecast.utilities.FileProcessor;
 import weatherForecast.utilities.HttpConnection;
+import weatherForecast.utilities.ResponseJsonParser;
 import weatherForecast.utilities.ReaderFromConnection;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.TreeMap;
 
 public class WeatherForecast {
 
@@ -20,71 +17,30 @@ public class WeatherForecast {
     private FileProcessor fileProcessor;
 
     public WeatherForecast() {
-        reader = new ReaderFromConnection();
+        reader = new ReaderFromConnection(new HttpConnection());
         fileProcessor = new FileProcessor();
     }
 
-    public JsonObject jsonParser(String jsonString) {
-        JsonElement jsonElement = new JsonParser().parse(jsonString);
-        return jsonElement.getAsJsonObject();
-    }
-
-    public JsonObject getLocation(String city) {
+    public String getLocation(String city) throws Exception{
         String jsonString = reader.readFromUrl(city);
-        return jsonParser(jsonString).getAsJsonObject("city");
+        ResponseJsonParser responseJsonParser = new ResponseJsonParser(jsonString);
+        return String.format("This city lat: %s ; lon: %s",
+                responseJsonParser.getCityLatitude(), responseJsonParser.getCityLongitude());
     }
 
-    public Map<String, String> getCurrentWeather(String city) {
+    public String getCurrentWeather(String city) throws Exception{
         String jsonString = reader.readFromUrl(city);
-        JsonObject jsonObject = jsonParser(jsonString);
+        ResponseJsonParser responseJsonParser = new ResponseJsonParser(jsonString);
 
-        Map<String, String> map = new TreeMap<String, String>();
-        JsonObject forecastLocation = jsonObject.getAsJsonObject("city");
-        JsonArray jsonArray = jsonObject.getAsJsonArray("list");
-
-        map.put("LOCATION", forecastLocation.toString());
-
-        JsonObject object = jsonArray.get(0).getAsJsonObject();
-        String date = object.get("dt_txt").getAsString();
-
-        JsonObject currentWeather = object.get("main").getAsJsonObject();
-        map.put("Date", date);
-        map.put("TEMPERATURE", currentWeather.get("temp").toString());
-
-        return map;
+        return String.format("Current weather in %s : %s",
+                responseJsonParser.getCity(), responseJsonParser.getCurrentTemperature());
     }
 
-    public Map<String, String> getWeatherForecast(String city) {
-        String jsonString = reader.readFromUrl(city);
-        JsonObject jsonObject = jsonParser(jsonString);
-
-        Map<String, String> map = new TreeMap<String, String>();
-
-        JsonObject forecastLocation = jsonObject.getAsJsonObject("city");
-        JsonArray jsonArray = jsonObject.getAsJsonArray("list");
-
-        map.put("LOCATION", forecastLocation.toString());
-
-        Map<String, JsonElement> weatherInformation = new HashMap<String, JsonElement>();
-
-        for (int i = 0; i < 25; i++) {
-            JsonObject object = jsonArray.get(i).getAsJsonObject();
-
-            String date = object.get("dt_txt").getAsString();
-
-
-            JsonObject weatherInfo = object.get("main").getAsJsonObject();
-
-            weatherInformation.put("MIN_TEMPERATURE", weatherInfo.get("temp_min"));
-            weatherInformation.put("MAX_TEMPERATURE", weatherInfo.get("temp_max"));
-
-            map.put(date, weatherInformation.toString());
-
-        }
-        return map;
+    public String getWeatherForecast(String city) throws Exception {
+        return generateOutputStringForWeatherForecast(city);
     }
 
-    public Map<String, String> getForecastFromConsole () {
+    public String getWeatherForecastFromConsole () throws Exception{
 
         Scanner scanner = new Scanner(System.in);
 
@@ -92,18 +48,38 @@ public class WeatherForecast {
 
         String city = scanner.next();
 
-        System.out.println(getWeatherForecast(city));
+        System.out.println(generateOutputStringForWeatherForecast(city));
+
         return getWeatherForecast(city);
     }
 
-    public void forecastForCitiesInFile() {
+    public void getWeatherForecastForCitiesInFile() throws Exception{
         String[] cities = fileProcessor.readFromFile().split("\n");
-        StringBuilder output = new StringBuilder();
-        for (int i = 0; i < cities.length; i++) {
-            output.append(getWeatherForecast(cities[i]));
-            output.append("\n");
+
+        for (String city : cities) {
+            String output = generateOutputStringForWeatherForecast(city);
+
+            fileProcessor.writeToFile(output, city.trim());
         }
-        fileProcessor.writeToFile(output.toString());
+    }
+
+    public String generateOutputStringForWeatherForecast(String city) throws Exception{
+        String jsonString = reader.readFromUrl(city);
+        ResponseJsonParser responseJsonParser = new ResponseJsonParser(jsonString);
+        StringBuilder output = new StringBuilder();
+
+        String forecastForCurrentCity = getCurrentWeather(city);
+
+        output.append(forecastForCurrentCity).append("\n\n");
+        output.append(getLocation(city)).append("\n\n");
+        output.append(String.join("", Collections.nCopies(50, "="))).append("\n\n");
+
+        for (Map.Entry<String, JsonObject> entry : responseJsonParser.getForecastForThreeDays().entrySet()) {
+
+            output.append(entry).append("\n\n");
+
+        }
+        return output.toString();
     }
 
     public ReaderFromConnection getReader() {
@@ -121,11 +97,4 @@ public class WeatherForecast {
     public void setFileProcessor(FileProcessor fileProcessor) {
         this.fileProcessor = fileProcessor;
     }
-
-
-    public static void main(String[] args) throws Exception{
-        WeatherForecast weatherForecast = new WeatherForecast();
-        System.out.println(weatherForecast.getCurrentWeather("Tallinn"));
-    }
-
 }
